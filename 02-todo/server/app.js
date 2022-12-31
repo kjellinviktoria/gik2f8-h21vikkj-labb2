@@ -28,7 +28,6 @@ app
   1. En route, som utgör en del av adressen/URL:en dit man kan skicka förfrågan. Man anger det som ska stå efter domän och port (vår server är konfigurerar som default att köra på localhost:5000), så här metod lyssnar man alltså efter GET-anrop till url:en localhost:5000/task
   
   Notera att route-namnen döps om i lektion 6. De ska heta tasks, inte task, men felet är enligt videorna inte tillrättat i detta skede, så jag lämnar kvar det. 
-
   2. En callbackfunktion som kommer att köras när en sådan förfrågan görs. Callbackfunktionen tar (minst) två parametrar - ett requestobjekt och ett responseobjekt, som här kallas req och res. Callbackfunktionen är asynkron för att vi använder await inuti. */
 app.get('/tasks', async (req, res) => {
   /* För enkel felhantering används try/catch */
@@ -55,9 +54,9 @@ app.post('/tasks', async (req, res) => {
     let maxTaskId = 1;
     /* Om det finns några uppgifter sedan tidigare, dvs. currentTasks existerar och är en lista med en längd större än 0 ska ett nytt id räknas ut baserat på de som redan finns i filen */
     if (currentTasks && currentTasks.length > 0) {
-      /* Det görs genom array.reduce() som går igenom alla element i listan och tar fram det högsta id:t. Det högsta id:t sparas sedan i variabeln maxTaskId */
+      /* Det görs genom array.reduce() som går igenom alla currentT i listan och tar fram det högsta id:t. Det högsta id:t sparas sedan i variabeln maxTaskId */
       maxTaskId = currentTasks.reduce(
-        /* För varje element i currentTasks anropas en callbackfunktion som får två parametrar, maxId och currentElement. maxId kommer att innehålla det id som för närvarande är högst och currentElement representerar det aktuella element i currentTasks som man för närvarande kontrollerar.  */
+        /* För varje currentT i currentTasks anropas en callbackfunktion som får två parametrar, maxId och currentElement. maxId kommer att innehålla det id som för närvarande är högst och currentElement representerar det aktuella currentT i currentTasks som man för närvarande kontrollerar.  */
         (maxId, currentElement) =>
           /* Om id:t för den aktuella uppgiften är större än det i variabeln maxId, sätts maxId om till det id som nu är högst. maxId är från början satt till värdet av maxTaskId (1, enligt rad 53.).  */
           currentElement.id > maxId ? currentElement.id : maxId,
@@ -114,10 +113,33 @@ app.delete('/tasks/:id', async (req, res) => {
 });
 
 /***********************Labb 2 ***********************/
-/* Här skulle det vara lämpligt att skriva en funktion som likt post eller delete tar kan hantera PUT- eller PATCH-anrop (du får välja vilket, läs på om vad som verkar mest vettigt för det du ska göra) för att kunna markera uppgifter som färdiga. Den nya statusen - completed true eller falase - kan skickas i förfrågans body (req.body) tillsammans med exempelvis id så att man kan söka fram en given uppgift ur listan, uppdatera uppgiftens status och till sist spara ner listan med den uppdaterade uppgiften */
 
-/* Observera att all kod rörande backend för labb 2 ska skrivas i denna fil och inte i app.node.js. App.node.js är bara till för exempel från lektion 5 och innehåller inte någon kod som används vidare under lektionerna. */
+app.put('/tasks/:id', async (req, res) => {
+  console.log(req)
+  try {
+    const id = req.params.id;
+    const listBuffer =  await fs.readFile("./tasks.json");
+    const currentTasks = JSON.parse(listBuffer);
+
+    currentTasks.forEach(currentT => {
+      if (currentT.id == id && currentT.completed == true) {
+        currentT.completed = false;
+      }
+
+      else if (currentT.id == id && currentT.completed == false) {
+        currentT.completed = true;
+      }
+    });
+    await fs.writeFile("./tasks.json", JSON.stringify(currentTasks));
+  }
+  catch(error) {
+    res.status(500).send({ error: error.stack });
+  }
+});
+
+
+
+
 /***********************Labb 2 ***********************/
 
-/* Med app.listen säger man åte servern att starta. Första argumentet är port - dvs. det portnummer man vill att servern ska köra på. Det sattes till 5000 på rad 9. Det andra argumentet är en anonym arrow-funktion som körs när servern har lyckats starta. Här skrivs bara ett meddelande ut som berättar att servern kör, så att man får feedback på att allt körts igång som det skulle. */
 app.listen(PORT, () => console.log('Server running on http://localhost:5000'));
